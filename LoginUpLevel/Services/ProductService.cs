@@ -101,20 +101,7 @@ namespace LoginUpLevel.Services
                     var color = await _unitOfWork.ColorRepository.GetById(productColor.ColorId);
                     item.NameColors.Add(color.NameColor);
                 }
-                var productDTO = new ProductDTO
-                {
-                    Id = item.Id,
-                    Name = item.Name,
-                    Description = item.Description,
-                    Price = item.Price,
-                    AMount = item.AMount,
-                    Gender = item.Gender,
-                    Weight = item.Weight,
-                    Size = item.Size,
-                    Category = item.Category,
-                    NameColors = item.NameColors,
-                    Image = item.Image,
-                };
+                var productDTO = MapProductDTO(item);
 
                 productsDTO.Add(productDTO);
             }
@@ -139,20 +126,8 @@ namespace LoginUpLevel.Services
                     product.NameColors.Add(color.NameColor);
                 }
 
-                var productDTO = new ProductDTO
-                {
-                    Id = product.Id,
-                    Name = product.Name,
-                    Description = product.Description,
-                    Price = product.Price,
-                    AMount = product.AMount,
-                    Gender = product.Gender,
-                    Weight = product.Weight,
-                    Size = product.Size,
-                    Category = product.Category,
-                    NameColors = product.NameColors,
-                    Image = product.Image,
-                };
+                var productDTO = MapProductDTO(product);
+
 
                 return productDTO;
             } catch (Exception ex)
@@ -254,6 +229,23 @@ namespace LoginUpLevel.Services
             if (dto.Weight != null && dto.Weight != "") entity.Weight = dto.Weight;
             if (dto.Size != null && dto.Size != "") entity.Size = dto.Size;
             if (dto.Category != null && dto.Category != "") entity.Category = dto.Category;
+        }
+        private ProductDTO MapProductDTO(Product product)
+        {
+            return new ProductDTO
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                AMount = product.AMount,
+                Gender = product.Gender,
+                Weight = product.Weight,
+                Size = product.Size,
+                Category = product.Category,
+                NameColors = product.NameColors,
+                Image = product.Image,
+            };
         }
     }
 }
