@@ -24,6 +24,7 @@ namespace LoginUpLevel.Data
         public DbSet<CartItem> CartItems { get; set; } = null!;
         public DbSet<Color> Colors { get; set; } = null!;
         public DbSet<ProductColor> ProductColors { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -47,7 +48,6 @@ namespace LoginUpLevel.Data
                     j => j.HasOne<Product>(mg => mg.Product).WithMany(m => m.OrderDetails)
                 );
 
-
             modelBuilder.Entity<Product>()
                 .HasMany(m => m.Carts)
                 .WithMany(g => g.Products)
@@ -55,6 +55,7 @@ namespace LoginUpLevel.Data
                     j => j.HasOne<Cart>(mg => mg.Cart).WithMany(g => g.CartItems),
                     j => j.HasOne<Product>(mg => mg.Product).WithMany(m => m.CartItem)
                 );
+
             modelBuilder.Entity<Product>()
                 .HasMany(m => m.Colors)
                 .WithMany(g => g.Product)
@@ -79,6 +80,16 @@ namespace LoginUpLevel.Data
                 .HasMany(m => m.OrderAdress)
                 .WithOne(s => s.Customer)
                 .HasForeignKey(s => s.CustomerId);
+
+            modelBuilder.Entity<Customer>()
+                .HasMany(m => m.Comments)
+                .WithOne(s => s.Customer)
+                .HasForeignKey(s => s.CustomerId);
+
+            modelBuilder.Entity<Product>()
+                .HasMany(m => m.Comments)
+                .WithOne(s => s.Product)
+                .HasForeignKey(s => s.ProductId);
 
             // Seed data cho Status
             List<Status> statuses = new List<Status>

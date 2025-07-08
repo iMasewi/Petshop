@@ -25,5 +25,6 @@ namespace LoginUpLevel.Models
         public ICollection<OrderDetail> OrderDetails { get; } = new List<OrderDetail>();
         public ICollection<CartItem> CartItem { get; } = new List<CartItem>(); 
         public ICollection<ProductColor> ProductColors { get; set; } = new List<ProductColor>();
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }

@@ -24,5 +24,13 @@ namespace LoginUpLevel.Repositories
                 .Where(od => od.ProductId == productId)
                 .ToListAsync();
         }
+
+        public async Task<bool> HasCustomerPurchasedProductCompletedAsync(int customerId, int productId)
+        {
+            return await _context.OrderDetail
+                .AnyAsync(od => od.ProductId == productId &&
+                               od.Order.CustomerId == customerId &&
+                               od.Order.StatusId == 3);
+        }
     }
 }

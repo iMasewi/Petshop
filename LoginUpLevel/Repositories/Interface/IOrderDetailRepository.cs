@@ -6,5 +6,6 @@ namespace LoginUpLevel.Repositories.Interface
     {
         Task<IEnumerable<OrderDetail>> GetOrderDetailsByOrderIdAsync(int orderId);
         Task<IEnumerable<OrderDetail>> GetOrderDetailsByProductIdAsync(int productId);
+        Task<bool> HasCustomerPurchasedProductCompletedAsync(int customerId, int productId);
     }
 }

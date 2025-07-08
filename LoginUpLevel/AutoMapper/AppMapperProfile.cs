@@ -21,6 +21,7 @@ namespace MovieTheaterAPI.AutoMapper
             CreateMap<CartItem, CartItemDTO>().ReverseMap();
             CreateMap<Color, ColorDTO>().ReverseMap();
             CreateMap<ProductColor, ProductColorDTO>().ReverseMap();
+            CreateMap<Comment, CommentDTO>().ReverseMap();
         }
     }
 }

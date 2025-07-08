@@ -25,5 +25,6 @@ namespace LoginUpLevel.DTOs
         public ICollection<CartItemDTO> CartItems { get; } = new List<CartItemDTO>();
         public string? ProductColorsJson { get; set; }
         public ICollection<ProductColorDTO> ProductColors { get; set; } = new List<ProductColorDTO>();
+        public ICollection<CommentDTO> Comments { get; set; } = new List<CommentDTO>();
     }
 }

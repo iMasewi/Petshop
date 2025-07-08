@@ -20,6 +20,7 @@ namespace LoginUpLevel.Repositories
             CartItemRepository = new CartItemRepository(_context);
             ColorRepository = new ColorRepository(_context);
             ProductColorRepository = new ProductColorRepository(_context);
+            CommentRepository = new CommentRepository(_context);
         }
         public IProductRepository ProductRepository { get; private set; }
 
@@ -37,6 +38,7 @@ namespace LoginUpLevel.Repositories
         public ICartItemRepository CartItemRepository { get; private set; }
         public IColorRepository ColorRepository { get; private set; }
         public IProductColorRepository ProductColorRepository { get; private set; }
+        public ICommentRepository CommentRepository { get; private set; }
 
         public void Dispose()
         {

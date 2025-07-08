@@ -81,6 +81,8 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IColorRepository, ColorRepository>();
 builder.Services.AddScoped<IColorService, ColorService>();
 builder.Services.AddScoped<IProductColorRepository, ProductColorRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(option =>

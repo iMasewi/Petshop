@@ -13,6 +13,7 @@
         ICartItemRepository CartItemRepository { get; }
         IColorRepository ColorRepository { get; }
         IProductColorRepository ProductColorRepository { get; }
+        ICommentRepository CommentRepository { get; }
         Task SaveChangesAsync();
         void Dispose();
     }

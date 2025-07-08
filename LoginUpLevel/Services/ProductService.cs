@@ -55,7 +55,7 @@ namespace LoginUpLevel.Services
 
                 await _unitOfWork.ProductRepository.Add(newProduct);
                 await _unitOfWork.SaveChangesAsync();
-                return productDto;
+                return productDto;      
             }
             catch (Exception ex)
             {

@@ -58,18 +58,16 @@ namespace LoginUpLevel.Services
 
                         var orderDetail = new OrderDetail
                         {
-                            TotalPrice = item.AMount * product.Price,
                             AMount = item.AMount,
                             Price = product.Price,
+                            TotalPrice = item.AMount * product.Price,
                             ProductName = product.Name,
                             ProductImage = product.Image,
                             OrderId = newOrder.Id,
-                            ProductId = item.ProductId
+                            ProductId = product.Id
                         };
 
                         await _unitOfWork.OrderDetailRepository.Add(orderDetail);
-                        await _unitOfWork.SaveChangesAsync();
-
                         totalPrice += orderDetail.TotalPrice;
                         product.AMount -= item.AMount;
                     }
@@ -129,7 +127,7 @@ namespace LoginUpLevel.Services
                 foreach (var item in orderDetail)
                 {
                     var product = await _unitOfWork.ProductRepository.GetById(item.ProductId);
-                    var orderDetailDto = MapOrderDetailDTO(item, product);
+                    var orderDetailDto = _mapper.Map<OrderDetailDTO>(item);
 
                     orderDto.OrderItems.Add(orderDetailDto);
                 }
@@ -157,7 +155,7 @@ namespace LoginUpLevel.Services
                 foreach (var item in orderDetail)
                 {
                     var product = await _unitOfWork.ProductRepository.GetById(item.ProductId);
-                    var orderDetailDto = MapOrderDetailDTO(item, product);
+                    var orderDetailDto = _mapper.Map<OrderDetailDTO>(item);
                     orderDto.OrderItems.Add(orderDetailDto);
                 }
             }
@@ -201,19 +199,6 @@ namespace LoginUpLevel.Services
                 throw new Exception("Failed to update order status", ex);
 
             }
-        }
-        public OrderDetailDTO MapOrderDetailDTO(OrderDetail orderDetail, Product product)
-        {
-            return new OrderDetailDTO
-            {
-                AMount = orderDetail.AMount,
-                TotalPrice = orderDetail.AMount * product.Price,
-                Price = product.Price,
-                ProductName = product.Name,
-                ProductImage = product.Image,
-                ProductId = orderDetail.ProductId,
-                OrderId = orderDetail.OrderId
-            };
         }
     }
 }
