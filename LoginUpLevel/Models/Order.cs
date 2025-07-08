@@ -1,4 +1,6 @@
-﻿namespace LoginUpLevel.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace LoginUpLevel.Models
 {
     public class Order
     {
@@ -13,6 +15,7 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int? CustomerId { get; set; }
         public int? StatusId { get; set; } = 1;
+        [ForeignKey("CustomerId")]
         public Customer Customer { get; set; } = null!;
         public Status Status { get; set; } = null!;
         public List<Product> Products { get; } = [];

@@ -37,10 +37,6 @@ namespace LoginUpLevel.Services
                     CustomerId = customerId
                 };
 
-                if (newOrder == null)
-                {
-                    throw new Exception("Failed to create order");
-                }
                 await _unitOfWork.OrderRepository.Add(newOrder);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -131,13 +127,7 @@ namespace LoginUpLevel.Services
                 foreach (var item in orderDetail)
                 {
                     var product = await _unitOfWork.ProductRepository.GetById(item.ProductId);
-                    var orderDetailDto = new OrderDetailDTO
-                    {
-                        AMount = item.AMount,
-                        TotalPrice = item.AMount * product.Price,
-                        ProductId = item.ProductId,
-                        OrderId = item.OrderId
-                    };
+                    var orderDetailDto = MapOrderDetailDTO(item, product.Price);
 
                     orderDto.OrderItems.Add(orderDetailDto);
                 }
@@ -165,13 +155,7 @@ namespace LoginUpLevel.Services
                 foreach (var item in orderDetail)
                 {
                     var product = await _unitOfWork.ProductRepository.GetById(item.ProductId);
-                    var orderDetailDto = new OrderDetailDTO
-                    {
-                        AMount = item.AMount,
-                        TotalPrice = item.AMount * product.Price,
-                        ProductId = item.ProductId,
-                        OrderId = item.OrderId
-                    };
+                    var orderDetailDto = MapOrderDetailDTO(item, product.Price);
                     orderDto.OrderItems.Add(orderDetailDto);
                 }
             }
@@ -215,6 +199,16 @@ namespace LoginUpLevel.Services
                 throw new Exception("Failed to update order status", ex);
 
             }
+        }
+        public OrderDetailDTO MapOrderDetailDTO(OrderDetail item, float price)
+        {
+            return new OrderDetailDTO
+            {
+                AMount = item.AMount,
+                TotalPrice = item.AMount * price,
+                ProductId = item.ProductId,
+                OrderId = item.OrderId
+            };
         }
     }
 }
