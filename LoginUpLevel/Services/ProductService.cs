@@ -41,20 +41,21 @@ namespace LoginUpLevel.Services
                     newProduct.Image = "/uploads/images/images/products/default.png";
                 }
 
-                foreach(var productColorDto in productDto.ProductColors)
-                {
-                    var productColor = _mapper.Map<ProductColor>(productColorDto);
-                    if(productColor == null)
-                    {
-                        throw new Exception("Invalid ProductColor");
-                    }
-                    productColor.ProductId = productDto.Id;
-                    await _unitOfWork.ProductColorRepository.Add(productColor);
-                    await _unitOfWork.SaveChangesAsync();
-                }
-
                 await _unitOfWork.ProductRepository.Add(newProduct);
                 await _unitOfWork.SaveChangesAsync();
+
+                //foreach (var productColorDto in productDto.ProductColors)
+                //{
+                //    var productColor = _mapper.Map<ProductColor>(productColorDto);
+                //    if(productColor == null)
+                //    {
+                //        throw new Exception("Invalid ProductColor");
+                //    }
+                //    productColor.ProductId = newProduct.Id;
+                //    await _unitOfWork.SaveChangesAsync();
+                //}
+
+                
                 return productDto;      
             }
             catch (Exception ex)
