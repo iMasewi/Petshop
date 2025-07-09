@@ -1,4 +1,6 @@
 ﻿using LoginUpLevel.DTOs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 
 namespace LoginUpLevel.Services
 {
@@ -6,6 +8,5 @@ namespace LoginUpLevel.Services
     {
         Task<UserDTO> LoginAsync(LoginDTO loginDto);
         Task LogoutAsync();
-        string GenerateJwtToken(UserDTO user);
     }
 }
