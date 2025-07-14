@@ -1,7 +1,9 @@
 ﻿using LoginUpLevel.DTOs;
 using LoginUpLevel.Models;
 using LoginUpLevel.Repositories.Interface;
+using LoginUpLevel.Services.Interface;
 using LoginUpLevel.Utils;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,13 +15,13 @@ namespace LoginUpLevel.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IConfiguration _configuration;
+        private readonly IJwtService _jwtService;
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
 
-        public AuthService(IConfiguration configuration, SignInManager<User> signInManager, UserManager<User> userManager)
+        public AuthService(IJwtService jwtService, SignInManager<User> signInManager, UserManager<User> userManager)
         {
-            _configuration = configuration;
+            _jwtService = jwtService;
             _signInManager = signInManager;
             _userManager = userManager;
         }
@@ -34,7 +36,7 @@ namespace LoginUpLevel.Services
                     throw new UnauthorizedAccessException("Invalid information");
                 }
                 var userDto = await MapToUserDto(user);
-                var token = GenerateJwtToken(userDto);
+                var token = await _jwtService.GenerateTokenAsync(user);
                 userDto.Token = token;
                 return userDto;
             }
@@ -43,30 +45,6 @@ namespace LoginUpLevel.Services
                 throw new Exception("Login failed", ex);
             }
         }
-        public string GenerateJwtToken(UserDTO user)
-        {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         private async Task<UserDTO> MapToUserDto(User user)
         {
             return new UserDTO
