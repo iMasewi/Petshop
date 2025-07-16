@@ -6,15 +6,18 @@ using MimeKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit.Text;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LoginUpLevel.Services
 {
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _configuration;
-        public EmailService(IConfiguration configuration)
+        private readonly IViewRenderService _viewRenderService;
+        public EmailService(IConfiguration configuration, IViewRenderService viewRenderService)
         {
             _configuration = configuration;
+            _viewRenderService = viewRenderService;
         }
 
         public async Task<string> GenerateEmailOtpAsync(string email)
@@ -52,7 +55,7 @@ namespace LoginUpLevel.Services
 
         public async Task<bool> VerifyEmailOtp(EmailOtpDTO emailOtpDto)
         {
-            var otp = await Encrypted(emailOtpDto.Otp);
+            var otp = await Encrypted(emailOtpDto.Otp); 
             if (otp.Equals(emailOtpDto.StringEncrypted)) return true;
             return false;
         }
@@ -77,10 +80,6 @@ namespace LoginUpLevel.Services
                 }
             }
             return randomStringEncrypted;
-        }
-        private string GetBodyEmail(string content)
-        {
-            return $"send successfully {content}";
         }
         private string GetEmailBody(EmailViewDTO emailViewDTO)
         {
