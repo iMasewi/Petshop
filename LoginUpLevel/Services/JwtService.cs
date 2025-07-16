@@ -12,33 +12,26 @@ namespace LoginUpLevel.Services
     public class JwtService : IJwtService
     {
         private readonly IConfiguration _configuration;
-        private readonly UserManager<User> _userManager;
 
-        public JwtService(IConfiguration configuration, UserManager<User> userManager)
+        public JwtService(IConfiguration configuration)
         {
             _configuration = configuration;
-            _userManager = userManager;
         }
 
-        public async Task<string> GenerateTokenAsync(User user)
+        public async Task<string> GenerateTokenAsync(UserDTO userDto)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new List<Claim>
+            var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.GivenName, user.FirstName),
-                new Claim(ClaimTypes.Surname, user.LastName)
+                new Claim(ClaimTypes.NameIdentifier, userDto.Id.ToString()),
+                new Claim(ClaimTypes.Name, userDto.Username),
+                new Claim(ClaimTypes.Email, userDto.Email),
+                new Claim(ClaimTypes.Role, userDto.Role),
+                new Claim(ClaimTypes.GivenName, userDto.FirstName ?? string.Empty),
+                new Claim(ClaimTypes.Surname, userDto.LastName ?? string.Empty)
             };
-
-            var roles = await _userManager.GetRolesAsync(user);
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],

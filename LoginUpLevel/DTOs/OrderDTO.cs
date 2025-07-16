@@ -13,6 +13,7 @@
         public int? CustomerId { get; set; }
         public int? StatusId { get; set; }
         public int OrderAdressId { get; set; }
+        public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
         public List<ProductDTO> Products { get; } = [];
         public ICollection<OrderDetailDTO> OrderItems { get; set; } = new List<OrderDetailDTO>();
     }

@@ -14,8 +14,12 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -81,11 +85,13 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
     .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, option =>
     {
@@ -98,15 +104,26 @@ builder.Services.AddAuthentication(options =>
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Name
         };
+    })
+    .AddCookie()
+    .AddGoogle(googleOptions =>
+    {
+        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        googleOptions.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     });
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -129,6 +146,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseCors("CorsPolicy");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
@@ -138,5 +156,30 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapRazorPages();
+
+//app.MapGet("/api/Auth/loginGoogle", ([FromQuery] string returnUrl, LinkGenerator linkGenerator,
+//    SignInManager<User> signManager, HttpContext context) =>
+//{
+//    var properties = signManager.ConfigureExternalAuthenticationProperties("Google",
+//        linkGenerator.GetPathByName(context, "GoogleLoginCallback")
+//        + $"?returnUrl={returnUrl}");
+
+//    return Results.Challenge(properties, ["Google"]);
+//});
+
+//app.MapGet("/api/Auth/loginGoogle/callback", async ([FromQuery] string returnUrl,
+//    HttpContext context, IAuthService authService) =>
+//{
+//    var result = await context.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+//    if (!result.Succeeded)
+//    {
+//        return Results.Unauthorized();
+//    }
+
+//    var token = await authService.LoginWithGoogleAsync(result.Principal);
+
+//    return Results.Redirect(returnUrl + $"?token={token}");
+//}).WithName("GoogleLoginCallback");
 
 app.Run();
