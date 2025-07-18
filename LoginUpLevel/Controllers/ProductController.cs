@@ -42,11 +42,11 @@ namespace LoginUpLevel.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetAllProducts()
+        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetAllProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var products = await _productService.GetAllAsync();
+                var products = await _productService.GetAllAsync(page, pageSize);
                 if (products == null || !products.Any())
                 {
                     return NotFound("No products found");

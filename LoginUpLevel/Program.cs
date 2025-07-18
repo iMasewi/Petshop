@@ -86,6 +86,7 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
+//builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 builder.Services.AddAuthentication(options =>
 {

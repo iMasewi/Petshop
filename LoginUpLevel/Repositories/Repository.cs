@@ -29,6 +29,13 @@ namespace LoginUpLevel.Repositories
             return Task.Run(() => _dbSet.Remove(entity));
         }
 
+        public async Task<IEnumerable<T>> GetAll(int page, int pageSize)
+        {
+            return await _dbSet
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
         public async Task<IEnumerable<T>> GetAll()
         {
             return await _dbSet.ToListAsync();

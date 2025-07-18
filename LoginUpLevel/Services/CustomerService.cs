@@ -5,6 +5,7 @@ using LoginUpLevel.Repositories.Interface;
 using LoginUpLevel.Services.Interface;
 using LoginUpLevel.Utils;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LoginUpLevel.Services
 {
@@ -13,12 +14,14 @@ namespace LoginUpLevel.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<User> _userManager;
         private readonly IMapper _mapper;
-
-        public CustomerService(IUnitOfWork unitOfWork, UserManager<User> userManager, IMapper mapper)
+        private readonly IMemoryCache _cache;
+        private const string CustomerCacheKey = "customer_list";
+        public CustomerService(IUnitOfWork unitOfWork, UserManager<User> userManager, IMapper mapper, IMemoryCache cache)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _mapper = mapper;
+            _cache = cache;
         }
 
         public async Task<CustomerDTO> AddCustomerAsync(CustomerDTO customerDto)
@@ -50,6 +53,8 @@ namespace LoginUpLevel.Services
                     await _unitOfWork.SaveChangesAsync();
 
                     var customer = _mapper.Map<CustomerDTO>(newCustomer);
+
+                    _cache.Remove(CustomerCacheKey);
                     return customer;
                 }
             }
@@ -99,14 +104,27 @@ namespace LoginUpLevel.Services
             }
             await _unitOfWork.CustomerRepository.Delete(customer);
             await _unitOfWork.SaveChangesAsync();
+            _cache.Remove(CustomerCacheKey);
         }
 
         public async Task<IEnumerable<CustomerDTO>> GetAllCustomersAsync()
         {
-            var customers =  await _unitOfWork.CustomerRepository.GetAll();
-            return _mapper.Map<IEnumerable<CustomerDTO>>(customers);
-        }
+            try
+            {
+                if(_cache.TryGetValue(CustomerCacheKey, out IEnumerable<CustomerDTO> cachedCustomer)){
+                    return cachedCustomer;
+                }
+                var customers = await _unitOfWork.CustomerRepository.GetAll();
+                var customerDto = _mapper.Map<IEnumerable<CustomerDTO>>(customers);
 
+                _cache.Set(CustomerCacheKey, customerDto, TimeSpan.FromMinutes(30));
+                return customerDto;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to retrieve customers", ex);
+            }
+        }
         public async Task<CustomerDTO> GetCustomerByIdAsync(int id)
         {
             var customer = await _unitOfWork.CustomerRepository.GetById(id);
@@ -135,6 +153,8 @@ namespace LoginUpLevel.Services
                 }
 
                 await _userManager.UpdateAsync(oldCustomer);
+
+                _cache.Remove(CustomerCacheKey);
             }
             catch (Exception ex)
             {

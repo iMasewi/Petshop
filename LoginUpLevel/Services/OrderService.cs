@@ -3,6 +3,7 @@ using LoginUpLevel.DTOs;
 using LoginUpLevel.Models;
 using LoginUpLevel.Repositories.Interface;
 using LoginUpLevel.Services.Interface;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LoginUpLevel.Services
 {
@@ -10,11 +11,13 @@ namespace LoginUpLevel.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-
-        public OrderService(IUnitOfWork unitOfWork, IMapper mapper)
+        private readonly IMemoryCache _cache;
+        private const string OrderCacheKey = "order_list";
+        public OrderService(IUnitOfWork unitOfWork, IMapper mapper, IMemoryCache cache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cache = cache;
         }
 
         public async Task<OrderDTO> CreateAsync(OrderDTO orderDto, int customerId)
@@ -76,6 +79,8 @@ namespace LoginUpLevel.Services
                 newOrder.TotalPrice = totalPrice;
                 await _unitOfWork.OrderRepository.Update(newOrder);
                 await _unitOfWork.SaveChangesAsync();
+
+                _cache.Remove(OrderCacheKey);
                 return orderDto;
             }
             catch (Exception ex)
@@ -99,16 +104,28 @@ namespace LoginUpLevel.Services
             }
             await _unitOfWork.OrderRepository.Delete(order);
             await _unitOfWork.SaveChangesAsync();
+
+            _cache.Remove(OrderCacheKey);
         }
 
         public async Task<IEnumerable<OrderDTO>> GetAllAsync()
         {
+            if(_cache.TryGetValue(OrderCacheKey, out IEnumerable<OrderDTO> cachedOrder))
+            {
+                return cachedOrder;
+            }
+
             var orders = await _unitOfWork.OrderRepository.GetAll();
             if (orders == null)
             {
                 throw new Exception("No orders found");
             }
-            return _mapper.Map<IEnumerable<OrderDTO>>(orders);
+
+            var ordersDto = _mapper.Map<IEnumerable<OrderDTO>>(orders);
+
+            _cache.Set(OrderCacheKey, ordersDto, TimeSpan.FromMinutes(30));
+
+            return ordersDto;
         }
 
         public async Task<OrderDTO> GetByIdAsync(int id)
@@ -140,6 +157,12 @@ namespace LoginUpLevel.Services
 
         public async Task<IEnumerable<OrderDTO>> GetOrdersByCustomerIdAsync(int customerId)
         {
+            var cacheKey = $"orders_by_customerId_{customerId}";
+            if(_cache.TryGetValue(cacheKey, out IEnumerable<OrderDTO> cachedOrder))
+            {
+                return cachedOrder;
+            }
+
             var orders = await _unitOfWork.OrderRepository.GetOrdersByCustomerIdAsync(customerId);
 
             if(orders == null)
@@ -159,18 +182,28 @@ namespace LoginUpLevel.Services
                     orderDto.OrderItems.Add(orderDetailDto);
                 }
             }
+
+            _cache.Set(cacheKey, ordersDto, TimeSpan.FromMinutes(30));
             return ordersDto;
         }
-        public async Task<IEnumerable<OrderDTO>> GetOrdersByStatusIdAsync(int customerId)
+        public async Task<IEnumerable<OrderDTO>> GetOrdersByStatusIdAsync(int statusId)
         {
-            var orders = await _unitOfWork.OrderRepository.GetOrdersByStatusAsync(customerId);
+            var cacheKey = $"orders_by_statusId_{statusId}";
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<OrderDTO> cachedOrder))
+            {
+                return cachedOrder;
+            }
+
+            var orders = await _unitOfWork.OrderRepository.GetOrdersByStatusAsync(statusId);
 
             if (orders == null)
             {
                 throw new Exception("Invalid orders");
             }
 
-            return _mapper.Map<IEnumerable<OrderDTO>>(orders);
+            var ordersDto = _mapper.Map<IEnumerable<OrderDTO>>(orders);
+            _cache.Set(cacheKey, orders, TimeSpan.FromMinutes(30));
+            return ordersDto;
         }
 
         public async Task UpdateStatusAsync(int id, int statusId)
@@ -193,6 +226,7 @@ namespace LoginUpLevel.Services
                 };
                 await _unitOfWork.OrderRepository.Update(oldorder);
                 await _unitOfWork.SaveChangesAsync();
+                _cache.Remove(OrderCacheKey);
             }
             catch (Exception ex)
             {

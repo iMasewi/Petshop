@@ -4,6 +4,7 @@ using LoginUpLevel.Models;
 using LoginUpLevel.Repositories.Interface;
 using LoginUpLevel.Services.Interface;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LoginUpLevel.Services
 {
@@ -11,10 +12,14 @@ namespace LoginUpLevel.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public ProductService(IUnitOfWork unitOfWork, IMapper mapper)
+        private readonly IMemoryCache _cache;
+        private const string ProductCacheKey = "product_list";
+
+        public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IMemoryCache cache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cache = cache;
         }
 
         public async Task<ProductDTO> CreateAsync(ProductDTO productDto, IFormFile? image)
@@ -44,6 +49,9 @@ namespace LoginUpLevel.Services
                 await _unitOfWork.ProductRepository.Add(newProduct);
                 await _unitOfWork.SaveChangesAsync();
 
+                // XÓA CACHE SAU KHI THÊM MỚI
+                _cache.Remove(ProductCacheKey);
+
                 //foreach (var productColorDto in productDto.ProductColors)
                 //{
                 //    var productColor = _mapper.Map<ProductColor>(productColorDto);
@@ -55,7 +63,7 @@ namespace LoginUpLevel.Services
                 //    await _unitOfWork.SaveChangesAsync();
                 //}
 
-                
+
                 return productDto;      
             }
             catch (Exception ex)
@@ -80,19 +88,27 @@ namespace LoginUpLevel.Services
 
             await _unitOfWork.ProductRepository.Delete(product);
             await _unitOfWork.SaveChangesAsync();
+            _cache.Remove(ProductCacheKey);
         }
 
-        public async Task<IEnumerable<ProductDTO>> GetAllAsync()
+        public async Task<IEnumerable<ProductDTO>> GetAllAsync(int page, int pageSize)
         {
-            var products = await _unitOfWork.ProductRepository.GetAll();
-            if(products == null)
+            var cacheKey = $"{ProductCacheKey}_page_{page}_size_{pageSize}";
+            //Kiểm tra xem cache có chưa
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<ProductDTO> cachedProducts))
+            {
+                return cachedProducts;
+            }
+
+            var products = await _unitOfWork.ProductRepository.GetAll(page, pageSize);
+            if (products == null)
             {
                 throw new Exception("No products found");
             }
 
             ICollection<ProductDTO> productsDTO = [];
 
-            foreach(var item in products)
+            foreach (var item in products)
             {
                 var productColors = await _unitOfWork.ProductColorRepository.GetProductColorsByProductIdAsync(item.Id);
                 item.NameColors = [];
@@ -105,6 +121,9 @@ namespace LoginUpLevel.Services
 
                 productsDTO.Add(productDTO);
             }
+            //Lưu vào cache
+            _cache.Set(cacheKey, productsDTO, TimeSpan.FromMinutes(1));
+
             return productsDTO;
         }
 
@@ -126,9 +145,7 @@ namespace LoginUpLevel.Services
                     product.NameColors.Add(color.NameColor);
                 }
 
-                var productDTO = MapProductDTO(product);
-
-                return productDTO;
+                return MapProductDTO(product);
             } catch (Exception ex)
             {
                 throw new Exception(ex.Message);
@@ -139,8 +156,19 @@ namespace LoginUpLevel.Services
         {
             try
             {
-                return await _unitOfWork.ProductRepository.GetProductByCatagoryAsync(category)
+                var cacheKey = $"products_by_category_{category.ToLower()}";
+                //Kiểm tra xem cache có chưa
+                if (_cache.TryGetValue(cacheKey, out IEnumerable<ProductDTO> cachedProducts))
+                {
+                    return cachedProducts;
+                }
+
+                var productsDto =  await _unitOfWork.ProductRepository.GetProductByCatagoryAsync(category)
                 .ContinueWith(task => task.Result.Select(p => _mapper.Map<ProductDTO>(p)));
+
+                _cache.Set(cacheKey, productsDto, TimeSpan.FromMinutes(5));
+
+                return productsDto;
             }
             catch (Exception ex)
             {
@@ -212,6 +240,8 @@ namespace LoginUpLevel.Services
 
                 await _unitOfWork.ProductRepository.Update(oldProduct);
                 await _unitOfWork.SaveChangesAsync();
+
+                _cache.Remove(ProductCacheKey);
             }
             catch (Exception ex)
             {

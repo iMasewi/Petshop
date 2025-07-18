@@ -3,6 +3,7 @@ using LoginUpLevel.DTOs;
 using LoginUpLevel.Models;
 using LoginUpLevel.Repositories.Interface;
 using LoginUpLevel.Services.Interface;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LoginUpLevel.Services
 {
@@ -10,10 +11,13 @@ namespace LoginUpLevel.Services
     {
         private readonly IUnitOfWork _uniOfWork;
         private readonly IMapper _mapper;
-        public CommentService(IUnitOfWork uniOfWork, IMapper mapper)
+        private readonly IMemoryCache _cache;
+        private const string CommentCacheKey = "comment_list";
+        public CommentService(IUnitOfWork uniOfWork, IMapper mapper, IMemoryCache cache)
         {
             _uniOfWork = uniOfWork;
             _mapper = mapper;
+            _cache = cache;
         }
         public async Task AddCommentAsync(CommentDTO commentDto)
         {
@@ -26,6 +30,8 @@ namespace LoginUpLevel.Services
                 var comment = _mapper.Map<Comment>(commentDto);
                 await _uniOfWork.CommentRepository.Add(comment);
                 await _uniOfWork.SaveChangesAsync();
+
+                _cache.Remove(CommentCacheKey);
             }
             catch (Exception ex)
             {
@@ -45,6 +51,8 @@ namespace LoginUpLevel.Services
                 }
                 await _uniOfWork.CommentRepository.Delete(comment);
                 await _uniOfWork.SaveChangesAsync();
+
+                _cache.Remove(CommentCacheKey);
             }
             catch (Exception ex)
             {
@@ -63,8 +71,11 @@ namespace LoginUpLevel.Services
         {
             try
             {
-                return await _uniOfWork.CommentRepository.GetCommentsByRatingAsyns(productId,rating)
+                var commentsDto = await _uniOfWork.CommentRepository.GetCommentsByRatingAsyns(productId,rating)
                     .ContinueWith(task => _mapper.Map<IEnumerable<CommentDTO>>(task.Result));
+
+                _cache.Set(CommentCacheKey, commentsDto, TimeSpan.FromMinutes(30));
+                return commentsDto;
             }
             catch (Exception ex)
             {
@@ -85,6 +96,7 @@ namespace LoginUpLevel.Services
                 _mapper.Map(commentDto, oldComment);
                 await _uniOfWork.CommentRepository.Update(oldComment);
                 await _uniOfWork.SaveChangesAsync();
+                _cache.Remove(CommentCacheKey);
             }
             catch (Exception ex)
             {
